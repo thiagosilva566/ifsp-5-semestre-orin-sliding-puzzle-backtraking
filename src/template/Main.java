@@ -179,6 +179,60 @@ public class Main extends EngineFrame {
         return null;
     }
 
+    /*
+    // para chamar esse metodo é necessario pegar todos os candidatos ao movimento
+    // e testar com dada candidato, e é necessario atualizar a variavel de stop solving
+    // caso o quebra cabeça tenha sido resolvido
+    */
+
+    private boolean solve( Vector2 position ) {
+
+        // incrementa a variável de nível da recursão
+
+        // checa se ja chegou no nivel maximo de recursao
+
+            // stop solving
+            // throw exception
+
+        // if stop solving
+
+            // return false
+
+        // save the location of the empty space before moving it
+
+        // move the part to the empty position
+
+        // add this movement to the set of solutions
+
+        // save the current game state
+
+        // check if this state has already occurred
+
+            // desfazer esse movimento
+
+            // remover esse movimento do conjunto de soluções
+
+            // return false
+
+        // add this state to the states already visited
+
+        // check if the puzzle has been solved
+
+            // stop solving
+            // return true
+
+        // here comes the recursion, it is necessary to test each candidate to move
+
+            // return true if its solve
+
+        // no solution found, so go back (move piece to back)
+
+        // remove this movement from the list of solutions
+
+        // return false
+
+    }
+
     public static void main( String[] args ) {
         new Main();
     }
