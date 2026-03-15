@@ -7,12 +7,8 @@ import br.com.davidbuzatto.jsge.math.Vector2;
 
 public class Main extends EngineFrame {
 
-    private enum GameState {
-
-    }
-
     private static final int SIZE = 3;
-    private Peca[][] grid;
+    private Piece[][] grid;
     private double pieceSize;
     private Image pieceImage;
 
@@ -36,13 +32,13 @@ public class Main extends EngineFrame {
     @Override
     public void create() {
 
-        grid = new Peca[SIZE][SIZE];
+        grid = new Piece[SIZE][SIZE];
         pieceSize = (double) getScreenHeight() / SIZE;
         pieceImage = loadImage("resources/images/gato.jpg").resize(getScreenWidth());
 
         for (int i = 0; i < SIZE; i++ ) {
             for (int j = 0; j < SIZE; j++ ) {
-                grid[i][j] = new Peca(
+                grid[i][j] = new Piece(
                         j * pieceSize,
                         i * pieceSize,
                         pieceSize,
@@ -185,7 +181,8 @@ public class Main extends EngineFrame {
     // caso o quebra cabeça tenha sido resolvido
     */
 
-    private boolean solve( Vector2 position ) {
+    // this method should return a boolean
+    private void solve( Vector2 position ) {
 
         // incrementa a variável de nível da recursão
 
