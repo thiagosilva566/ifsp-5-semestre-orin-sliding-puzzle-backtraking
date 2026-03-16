@@ -2,10 +2,16 @@ package template;
 
 import br.com.davidbuzatto.jsge.core.engine.EngineFrame;
 import br.com.davidbuzatto.jsge.image.Image;
+import br.com.davidbuzatto.jsge.imgui.GuiButton;
+import br.com.davidbuzatto.jsge.imgui.GuiComponent;
+import br.com.davidbuzatto.jsge.imgui.GuiLabel;
+import br.com.davidbuzatto.jsge.imgui.GuiTextComponent;
 import br.com.davidbuzatto.jsge.math.MathUtils;
 import br.com.davidbuzatto.jsge.math.Vector2;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class Main extends EngineFrame {
 
@@ -22,10 +28,20 @@ public class Main extends EngineFrame {
     private Set<String> statesAlreadyVisited;
     private Deque<Vector2> movesToSolve;
 
+    private List<GuiComponent> components;
+
+    private GuiButton trySolveButton;
+    private GuiButton shuffleButton;
+
+    private Color backgroundColor;
+    private Color backgroundColorComponents;
+    private Color textColorComponents;
+    private Color borderColorComponents;
+
     public Main() {
         
         super(
-            600,                 // largura                      / width
+            1200,                 // largura                      / width
             600,                 // algura                       / height
             "Quebra-cabeça",      // título                       / title
             60,                  // quadros por segundo desejado / target FPS
@@ -44,7 +60,7 @@ public class Main extends EngineFrame {
 
         grid = new Piece[SIZE][SIZE];
         pieceSize = (double) getScreenHeight() / SIZE;
-        pieceImage = loadImage("resources/images/gato.jpg").resize(getScreenWidth());
+        pieceImage = loadImage("resources/images/gato.jpg").resize(getScreenHeight());
 
         for (int i = 0; i < SIZE; i++ ) {
             for (int j = 0; j < SIZE; j++ ) {
@@ -63,10 +79,60 @@ public class Main extends EngineFrame {
         statesAlreadyVisited = new HashSet<>();
         movesToSolve = new LinkedList<>();
 
+        double buttonWidth = 500;
+        double buttonHeight = 40;
+        double xButton = (3.0 / 4) * getScreenWidth() - buttonWidth / 2;
+        double yGap = buttonHeight + 20;
+        double numberOfButtons = 2;
+        double yButton = ( getScreenHeight() - buttonHeight ) / 2 - ( numberOfButtons - 1 ) * yGap / 2 ;
+
+        trySolveButton = new GuiButton(
+                xButton,
+                yButton,
+                buttonWidth,
+                buttonHeight,
+                "Try to solve",
+                this
+        );
+
+        shuffleButton = new GuiButton(
+                xButton,
+                yButton + yGap,
+                buttonWidth,
+                buttonHeight,
+                "Shuffle",
+                this
+        );
+
+        components = new ArrayList<>();
+
+        components.add(trySolveButton);
+        components.add(shuffleButton);
+
+        backgroundColor = Color.decode("#355872");
+        backgroundColorComponents = Color.decode("#7AAACE");
+        textColorComponents = Color.decode("#F7F8F0");
+        borderColorComponents = Color.decode("#F7F8F0");
+
+        for ( GuiComponent component : components ) {
+            component.setBackgroundColor(backgroundColorComponents);
+            component.setBorderColor(borderColorComponents);
+            component.setTextColor(textColorComponents);
+            if ( component instanceof GuiLabel label ) {
+                label.setHorizontalAlignment(GuiTextComponent.CENTER_ALIGNMENT);
+                label.setDrawingBounds(true);
+            }
+
+        }
+
     }
 
     @Override
     public void update( double delta ) {
+
+        for ( GuiComponent component : components ) {
+            component.update( delta );
+        }
 
         if ( isMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
             for (int i = 0; i < SIZE; i++ ) {
@@ -78,11 +144,11 @@ public class Main extends EngineFrame {
             }
         }
 
-        if ( isKeyPressed(KEY_S) ) {
+        if ( shuffleButton.isMousePressed() ) {
             shuffle( 200 );
         }
 
-        if ( isKeyPressed(KEY_SPACE) ) {
+        if ( trySolveButton.isMousePressed() ) {
             while ( !isItFinished() ) {
                 try {
                     solve();
@@ -99,7 +165,11 @@ public class Main extends EngineFrame {
     @Override
     public void draw() {
         
-        clearBackground( WHITE );
+        clearBackground( backgroundColor );
+
+        for  ( GuiComponent component : components ) {
+            component.draw();
+        }
 
        for (int i = 0; i < SIZE; i++ ) {
            for (int j = 0; j < SIZE; j++ ) {
@@ -108,6 +178,8 @@ public class Main extends EngineFrame {
                }
            }
        }
+
+       drawLine( getScreenWidth() / 2, 0, getScreenWidth() / 2, getScreenHeight(), BLACK );
 
         drawFPS( 20, 20 );
     
