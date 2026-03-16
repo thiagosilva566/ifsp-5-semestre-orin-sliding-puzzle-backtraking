@@ -19,8 +19,8 @@ public class Main extends EngineFrame {
     private boolean stopSolving;
     private int currentRecursionDepth;
 
-    private Set<String> visitedStates;
-    private Deque<Vector2> solutionMoves;
+    private Set<String> statesAlreadyVisited;
+    private Deque<Vector2> movesToSolve;
 
     public Main() {
         
@@ -60,8 +60,8 @@ public class Main extends EngineFrame {
 
         grid[SIZE - 1][SIZE - 1] = null;
 
-        visitedStates = new HashSet<>();
-        solutionMoves = new LinkedList<>();
+        statesAlreadyVisited = new HashSet<>();
+        movesToSolve = new LinkedList<>();
 
     }
 
@@ -79,14 +79,14 @@ public class Main extends EngineFrame {
         }
 
         if ( isKeyPressed(KEY_S) ) {
-            shuffle( 9 );
+            shuffle( 200 );
         }
 
         if ( isKeyPressed(KEY_SPACE) ) {
-            while ( !checkFinished() ) {
+            while ( !isItFinished() ) {
                 try {
                     solve();
-                    if ( checkFinished() ) System.out.println("finished");
+                    if ( isItFinished() ) System.out.println("finished");
                 } catch (IllegalStateException e) {
                     shuffle( SIZE * SIZE );
                     System.out.println(e.getMessage());
@@ -202,20 +202,20 @@ public class Main extends EngineFrame {
 
     private void solve() throws IllegalStateException {
 
+        // reset the variables
         stopSolving = false;
         currentRecursionDepth = 0;
-        visitedStates.clear();
-        solutionMoves.clear();
+
+        // clear the data structures
+        statesAlreadyVisited.clear();
+        movesToSolve.clear();
 
         // stores the initial state
-        String initialState = getCurrentBoardState();
-        visitedStates.add( initialState );
+        statesAlreadyVisited.add( getCurrentBoardState() );
 
-        // get the initial moving candidates
-        List<Vector2> candidates = getCandidatesToMove();
-
-        for ( Vector2 c : candidates ) {
-            if ( solveRecurive( c ) ) {
+        // attempts to resolve the problem by considering all possible moves by the candidates
+        for ( Vector2 c : getCandidatesToMove() ) {
+            if ( solve( c ) ) {
                 stopSolving = true;
                 break;
             }
@@ -257,81 +257,85 @@ public class Main extends EngineFrame {
         return currentState;
     }
 
-    // perform the solve algorithm using backtracking based in a position
-    private boolean solveRecurive( Vector2 pos ) throws IllegalStateException {
+    /*
+    * To call this method you need to take all the candidates for the move and test
+    * them against a given candidate, and you need to update the "stop solving"
+    * variable if the puzzle has been solved
+    */
 
+    private boolean solve( Vector2 position ) {
+
+        // increases the recursion level variable
         currentRecursionDepth++;
 
+        // check if you've reached the maximum recursion level
         if ( currentRecursionDepth > MAX_RECURSION_DEPTH ) {
+            // stop solving
             stopSolving = true;
+            // throw exception
             throw new IllegalStateException( "reached max recursion depth!" );
         }
 
-        // stop trying to solve
+        // if stop solving
         if ( stopSolving ) {
+            // return false
             return false;
         }
 
-        // for backtracking, stores the backward movement before starting
-        Vector2 backward = getEmptyPosition();
+        // save the location of the empty space before moving it
+        Vector2 previousEmptyPosition = getEmptyPosition();
 
-        // move the current piece to the empty space
-        movePiece( (int) pos.y, (int) pos.x );
+        // move the part to the empty position
+        movePiece( (int) position.y, (int) position.x );
 
-        // adds to the solutions (maybe will need to remove)
-        solutionMoves.addLast( pos );
+        // add this movement to the set of solutions
+        movesToSolve.addLast( position );
 
-        // get the current state
-        String currentState = getCurrentBoardState();
-
-        // this state was already processed?
-        if ( visitedStates.contains( currentState ) ) {
-
-            // undo movement
-            movePiece( (int) backward.y, (int) backward.x );
-
-            // remove the move, because it is not correct
-            solutionMoves.removeLast();
-
-            // stop the current solution try
+        // check if this state has already occurred
+        if ( statesAlreadyVisited.contains( getCurrentBoardState() ) ) {
+            // undo that move
+            movePiece( (int) previousEmptyPosition.y, (int) previousEmptyPosition.x );
+            // remove this action from the set of solutions
+            movesToSolve.removeLast();
+            // return false
             return false;
-
         }
 
-        // ok, this movement shows promise!
+        // add this state to the states already visited
+        statesAlreadyVisited.add( getCurrentBoardState() );
 
-        // add the state
-        visitedStates.add( currentState );
-
-        // checks solution
-        if ( checkFinished() ) {
-            // solution found, stop and signals other calls to stop
+        // check if the puzzle has been solved
+        if ( isItFinished() ) {
+            // stop solving
             stopSolving = true;
+            // return true
             return true;
         }
 
-        // recursion, trying to find the solution in subproblems
-        List<Vector2> candidates = getCandidatesToMove();
-        for ( Vector2 c : candidates ) {
-            if ( solveRecurive( c ) ) {
-                return true; // solution found in a subproblem
+        // here comes the recursion, it is necessary to test each candidate to move
+        for ( Vector2 candidate : getCandidatesToMove() ) {
+            // return true if its solve
+            if ( solve( candidate ) ) {
+                return true;
             }
         }
 
-        // no solution found in subproblems, so the current path for
-        // problem solving is incorret
-        movePiece( (int) backward.y, (int) backward.x );
-        //visitedStates.remove( currentState );
-        solutionMoves.removeLast();
+        // no solution found, so go back (move piece to back)
+        movePiece( (int) previousEmptyPosition.y, (int) previousEmptyPosition.x );
 
+        // remove this movement from the list of solutions
+        movesToSolve.removeLast();
+
+        // decrements the recursion level variable
         currentRecursionDepth--;
 
-        // theres no path from here
+        // return false
         return false;
 
     }
 
-    private boolean checkFinished() {
+    // this method, as it stands, is not suitable for boards of any size
+    private boolean isItFinished() {
         return getCurrentBoardState().equals("01234567-1");
     }
 
