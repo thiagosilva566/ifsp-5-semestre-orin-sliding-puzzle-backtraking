@@ -15,6 +15,11 @@ import java.util.List;
 
 public class Main extends EngineFrame {
 
+    private enum GameState {
+        MOVING_PIECE,
+        DEFAULT
+    }
+
     private static final int SIZE = 3;
     private static final int MAX_RECURSION_DEPTH = 10000;
 
@@ -27,6 +32,13 @@ public class Main extends EngineFrame {
 
     private Set<String> statesAlreadyVisited;
     private Deque<Vector2> movesToSolve;
+
+    private GameState gameState;
+    private Vector2 currentPosition;
+    private Vector2 targetPosition;
+    private double movementPercentage;
+    private Piece movingPiece;
+    private double movementSpeed;
 
     private List<GuiComponent> components;
 
@@ -78,6 +90,9 @@ public class Main extends EngineFrame {
 
         statesAlreadyVisited = new HashSet<>();
         movesToSolve = new LinkedList<>();
+
+        gameState = GameState.DEFAULT;
+        movementSpeed = 10;
 
         double buttonWidth = 500;
         double buttonHeight = 40;
@@ -134,11 +149,23 @@ public class Main extends EngineFrame {
             component.update( delta );
         }
 
+        if ( gameState == GameState.MOVING_PIECE ) {
+            movementPercentage += movementSpeed * delta;
+            movingPiece.setPos(
+                    currentPosition.x + ( targetPosition.x - currentPosition.x ) * movementPercentage,
+                    currentPosition.y + ( targetPosition.y - currentPosition.y ) * movementPercentage
+            );
+            if ( movementPercentage > 1 ) {
+                gameState = GameState.DEFAULT;
+                recalculatePositions();
+            }
+        }
+
         if ( isMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
             for (int i = 0; i < SIZE; i++ ) {
                 for (int j = 0; j < SIZE; j++ ) {
-                    if ( grid[i][j] != null && grid[i][j].intercept(getMouseX(), getMouseY())) {
-                        movePiece( i, j );
+                    if ( grid[i][j] != null && gameState != GameState.MOVING_PIECE && grid[i][j].intercept(getMouseX(), getMouseY())) {
+                        movePieceWithAnimation( i, j );
                     }
                 }
             }
@@ -152,10 +179,8 @@ public class Main extends EngineFrame {
             while ( !isItFinished() ) {
                 try {
                     solve();
-                    if ( isItFinished() ) System.out.println("finished");
                 } catch (IllegalStateException e) {
                     shuffle( SIZE * SIZE );
-                    System.out.println(e.getMessage());
                 }
             }
         }
@@ -210,6 +235,49 @@ public class Main extends EngineFrame {
             grid[row][column] = null;
             recalculatePositions();
         }
+
+    }
+
+    private void movePieceWithAnimation(int row, int column ) {
+
+        int[] rowNeighbors = { -1, 0, 1, 0 };
+        int[] columnNeighbors = { 0, 1, 0, -1 };
+
+        int rowDestination = -1;
+        int columnDestination = -1;
+
+        for ( int i = 0; i < 4; i++ ) {
+            int currentRow = row + rowNeighbors[i];
+            int currentColumn = column + columnNeighbors[i];
+            if ( currentRow >= 0 && currentColumn >= 0 && currentRow < SIZE && currentColumn < SIZE) {
+                if ( grid[currentRow][currentColumn] == null ) {
+                    rowDestination = currentRow;
+                    columnDestination = currentColumn;
+                    break;
+                }
+            }
+        }
+
+        if ( rowDestination != -1 ) {
+            grid[rowDestination][columnDestination] = grid[row][column];
+            grid[row][column] = null;
+            gameState = GameState.MOVING_PIECE;
+
+            currentPosition = new Vector2(
+                    column * pieceSize,
+                    row * pieceSize
+            );
+
+            targetPosition = new  Vector2(
+                    columnDestination *  pieceSize,
+                    rowDestination * pieceSize
+            );
+
+            movementPercentage = 0;
+
+            movingPiece = grid[rowDestination][columnDestination];
+        }
+
 
     }
 
