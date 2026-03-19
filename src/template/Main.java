@@ -33,6 +33,7 @@ public class Main extends EngineFrame {
     private int currentRecursionDepth;
     private int totalMovesToSolve;
     private int currentMoveNumber;
+    private int numberOfReshuffle;
 
     private Set<String> statesAlreadyVisited;
     private Deque<Vector2> movesToSolve;
@@ -48,6 +49,7 @@ public class Main extends EngineFrame {
 
     private GuiButton trySolveButton;
     private GuiButton shuffleButton;
+    private GuiLabel numberOfReshuffleLabel;
 
     private Color backgroundColor;
     private Color backgroundColorComponents;
@@ -103,7 +105,7 @@ public class Main extends EngineFrame {
         double buttonHeight = 40;
         double xButton = (3.0 / 4) * getScreenWidth() - buttonWidth / 2;
         double yGap = buttonHeight + 20;
-        double numberOfButtons = 2;
+        double numberOfButtons = 3;
         double yButton = ( getScreenHeight() - buttonHeight ) / 2 - ( numberOfButtons - 1 ) * yGap / 2 ;
 
         trySolveButton = new GuiButton(
@@ -124,10 +126,20 @@ public class Main extends EngineFrame {
                 this
         );
 
+        numberOfReshuffleLabel = new GuiLabel(
+                xButton,
+                yButton + 2 * yGap,
+                buttonWidth,
+                buttonHeight,
+                "",
+                this
+        );
+
         components = new ArrayList<>();
 
         components.add(trySolveButton);
         components.add(shuffleButton);
+        components.add(numberOfReshuffleLabel);
 
         backgroundColor = Color.decode("#355872");
         backgroundColorComponents = Color.decode("#7AAACE");
@@ -140,7 +152,6 @@ public class Main extends EngineFrame {
             component.setTextColor(textColorComponents);
             if ( component instanceof GuiLabel label ) {
                 label.setHorizontalAlignment(GuiTextComponent.CENTER_ALIGNMENT);
-                label.setDrawingBounds(true);
             }
 
         }
@@ -165,6 +176,8 @@ public class Main extends EngineFrame {
                 recalculatePositions();
             }
         } else if ( gameState == GameState.RUNNING_SOLUTION ) {
+            trySolveButton.setEnabled( false );
+            shuffleButton.setEnabled( false );
             if  ( !movesToSolve.isEmpty() ) {
                 Vector2 currentPiece = movesToSolve.removeFirst();
                 movePiece( (int) currentPiece.y, (int) currentPiece.x );
@@ -172,6 +185,9 @@ public class Main extends EngineFrame {
             } else {
                 gameState = GameState.DEFAULT;
             }
+        } else if ( gameState == GameState.DEFAULT ) {
+            trySolveButton.setEnabled( true );
+            shuffleButton.setEnabled( true );
         }
 
         if ( isMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
@@ -189,17 +205,20 @@ public class Main extends EngineFrame {
         }
 
         if ( trySolveButton.isMousePressed() && !isItFinished() ) {
+            numberOfReshuffle = 0;
             while ( !isItFinished() ) {
                 try {
                     saveState();
                     solve();
                 } catch (IllegalStateException e) {
                     shuffle( SIZE * SIZE );
+                    numberOfReshuffle++;
                 }
             }
             loadState();
             gameState = GameState.RUNNING_SOLUTION;
             totalMovesToSolve = movesToSolve.size();
+            numberOfReshuffleLabel.setText("Number of reshuffles: "  +  numberOfReshuffle);
             currentMoveNumber = 0;
         }
 
