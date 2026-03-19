@@ -19,6 +19,16 @@ public class Piece {
         this.image = image;
     }
 
+    public Piece copy() {
+        return new Piece(
+                pos.x,
+                pos.y,
+                size,
+                value,
+                image
+        );
+    }
+
     public void draw( EngineFrame e, int gridSize ) {
 
         e.drawImage(image,

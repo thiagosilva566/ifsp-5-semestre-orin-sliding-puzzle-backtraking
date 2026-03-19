@@ -17,18 +17,22 @@ public class Main extends EngineFrame {
 
     private enum GameState {
         MOVING_PIECE,
-        DEFAULT
+        DEFAULT,
+        RUNNING_SOLUTION
     }
 
     private static final int SIZE = 3;
     private static final int MAX_RECURSION_DEPTH = 10000;
 
     private Piece[][] grid;
+    private Piece[][] savedGrid;
     private double pieceSize;
     private Image pieceImage;
 
     private boolean stopSolving;
     private int currentRecursionDepth;
+    private int totalMovesToSolve;
+    private int currentMoveNumber;
 
     private Set<String> statesAlreadyVisited;
     private Deque<Vector2> movesToSolve;
@@ -71,6 +75,7 @@ public class Main extends EngineFrame {
     public void create() {
 
         grid = new Piece[SIZE][SIZE];
+        savedGrid = new  Piece[SIZE][SIZE];
         pieceSize = (double) getScreenHeight() / SIZE;
         pieceImage = loadImage("resources/images/gato.jpg").resize(getScreenHeight());
 
@@ -159,6 +164,14 @@ public class Main extends EngineFrame {
                 gameState = GameState.DEFAULT;
                 recalculatePositions();
             }
+        } else if ( gameState == GameState.RUNNING_SOLUTION ) {
+            if  ( !movesToSolve.isEmpty() ) {
+                Vector2 currentPiece = movesToSolve.removeFirst();
+                movePiece( (int) currentPiece.y, (int) currentPiece.x );
+                currentMoveNumber++;
+            } else {
+                gameState = GameState.DEFAULT;
+            }
         }
 
         if ( isMouseButtonPressed(MOUSE_BUTTON_LEFT) ) {
@@ -175,14 +188,19 @@ public class Main extends EngineFrame {
             shuffle( 200 );
         }
 
-        if ( trySolveButton.isMousePressed() ) {
+        if ( trySolveButton.isMousePressed() && !isItFinished() ) {
             while ( !isItFinished() ) {
                 try {
+                    saveState();
                     solve();
                 } catch (IllegalStateException e) {
                     shuffle( SIZE * SIZE );
                 }
             }
+            loadState();
+            gameState = GameState.RUNNING_SOLUTION;
+            totalMovesToSolve = movesToSolve.size();
+            currentMoveNumber = 0;
         }
 
     }
@@ -206,7 +224,7 @@ public class Main extends EngineFrame {
 
        drawLine( getScreenWidth() / 2, 0, getScreenWidth() / 2, getScreenHeight(), BLACK );
 
-        drawFPS( 20, 20 );
+       drawText( String.format("%d/%d", currentMoveNumber, totalMovesToSolve), 20, 20, 20, WHITE );
     
     }
 
@@ -472,6 +490,30 @@ public class Main extends EngineFrame {
         // return false
         return false;
 
+    }
+
+    private void saveState() {
+        for ( int i = 0; i < SIZE; i++ ) {
+            for ( int j = 0; j < SIZE; j++ ) {
+                if ( grid[i][j] != null ) {
+                    savedGrid[i][j] = grid[i][j].copy();
+                } else {
+                    savedGrid[i][j] = null;
+                }
+            }
+        }
+    }
+
+    private void loadState() {
+        for ( int i = 0; i < SIZE; i++ ) {
+            for ( int j = 0; j < SIZE; j++ ) {
+                if ( savedGrid[i][j] != null ) {
+                    grid[i][j] = savedGrid[i][j].copy();
+                } else {
+                    grid[i][j] = null;
+                }
+            }
+        }
     }
 
     // this method, as it stands, is not suitable for boards of any size
